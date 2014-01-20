@@ -5,7 +5,7 @@ use warnings;
 
 ## Requirements: sffinfo from the gsAssembler site
 
-my $usage = "USAGE: SFFtoFASTQ.pl *.sff";
+my $usage = 'USAGE: SFFtoFASTQ.pl *.sff';
 die $usage unless @ARGV;
 
 ## Score conversion (Sanger to Illumina, code in ASCII:Phred 33+)

@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-my $usage = "USAGE: perl SFFtoFASTA.pl *.sff";
+my $usage = 'USAGE: perl SFFtoFASTA.pl *.sff';
 die $usage unless @ARGV;
 
 while (my $file = shift@ARGV){
