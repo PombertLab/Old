@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 
 ## Pombert Lab, IIT, 2013
+## Version 1.2
 
 use strict;
 use warnings;
@@ -19,22 +20,26 @@ while (my $file = shift@ARGV){
 	open IN, "<$file";
 	$file =~ s/.fastq//;
 	open OUT, ">$file.noTP.fastq";
+	open OUT2, ">$file.noTP.stats";
 	
 	my $len = undef;	## set length of sequence to be conserved
 	my $pos = 'good';	## set location fo sequence to keep: 5prime or 3 prime DEFAULT: good (read doesn't have TPs)
 	my $seq = undef;	## sequence to be kept
 	my $hed = 0;		## size of seq + tp if located at start of seq, will be set automatically, required later to set the substring offset
+	my $readsnum = 0;	## initialize total number of reads
+	my $readsmod = 0;	## initialize number of reads fltered
 	
 	while (my $line = <IN>){
 		chomp $line;
-		
-		if ($line =~ /^\@/){print OUT "$line\n";}	## FASTQ header
+		if ($line =~ /^\@/){print OUT "$line\n"; $readsnum++;}	## FASTQ header
+		elsif ($readsnum % 100000 == 0){print "Processing $file.fastq read number $readsnum ...\n";}
 		elsif ($line =~ /^\+/){print OUT "$line\n";}	## FASTQ linker
 		elsif ($line =~ /^(.*)$revtp.{0,$Ranchor}$/){	## Looking for TP in 3 prime
 			$seq = $1;
 			$len = length($seq);
 			print OUT "$seq\n";
 			$pos = '5prime';
+			$readsmod++;
 		}
 		elsif ($line =~ /^(.{0,$Lanchor}$tp)(.*)$/){	## Looking for TP in 5 prime
 			$hed = $1;
@@ -42,6 +47,7 @@ while (my $file = shift@ARGV){
 			$len = length($seq);
 			print OUT "$seq\n";
 			$pos = '3prime';
+			$readsmod++;
 		}
 		elsif ($pos eq '5prime'){			## Keeping the corresponding quality scores (if TP in 3 prime)
 			my $offset = ($len); 
@@ -59,4 +65,15 @@ while (my $file = shift@ARGV){
 		}
 		else{print OUT "$line\n";}			## Print if no conditions are met (perfect sequences and their QS)
 	}
+	my $percentage = (($readsmod/$readsnum)*100);
+	my $percent = sprintf("%.2f", $percentage);
+	print OUT2 "Total number of reads processed from $file.fastq: $readsnum\n";
+	print "Total number of reads processed from $file.fastq: $readsnum\n";
+	print OUT2 "Total number of reads filtered from $file.fastq: $readsmod\n";
+	print "Total number of reads filtered from $file.fastq: $readsmod\n";
+	print OUT2 "Percentage of reads from the dataset $file.fastq that contained the transposon: $percent\%\n";
+	print "Percentage of reads from the dataset $file.fastq that contained the transposon: $percent\%\n";
+	close IN;
+	close OUT;
 }
+exit;
