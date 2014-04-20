@@ -4,6 +4,7 @@ Genomics
 Contains useful scripts for genomics.
 
 EMBLtoPROT.pl - Extracts protein sequences from EMBL filies.
+EMBLtoTBL.pl - Converts EMBL files to NCBI TBL files for TBL2ASN.
 FASTQtoFASTA.pl - Converts FASTQ files to FASTA files and their associated QUAL files. Autodetects Sanger/illumina encoding.
 removeTP.pl - Removes NexteraXT transposon sequences from FASTQ files.
 SeqIO.pl - Interconverts common formats. Based on BioPerl's SeqIO module. Requires local installation of BioPerl.
