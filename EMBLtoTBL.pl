@@ -22,28 +22,24 @@ sub numSort {if ($a < $b) { return -1; }elsif ($a == $b) { return 0;}elsif ($a >
 ### Filling the products database
 my %hash = ();
 open HASH, "<$products";
-while (my $dbkey = <HASH>){chomp $dbkey;if ($dbkey =~ /^(\S+)\t(.*)$/){my $prot = $1;my $prod = $2;$hash{$prot}=$prod;}}
+while(my $dbkey = <HASH>){chomp $dbkey;if($dbkey =~ /^(\S+)\t(.*)$/){my $prot = $1;my $prod = $2;$hash{$prot}=$prod;}}
 
 ### Working on EMBL files
-while (my $file = shift@ARGV){
+while(my $file = shift@ARGV){
 	open IN, "<$file";
 	$file =~ s/.embl$//;
 	open DNA, "<$file.fsa";
 	open TBL, ">$file.tbl";
 	print TBL ">Feature $file\n"; ## Generate TBL header
 	
-	### Creating a single DNA string for protein translation
-	my $DNAseq= undef;
-	while (my $dna = <DNA>){
-		chomp $dna;
-		if ($dna =~ /^>/){next;}
-		else{$DNAseq.= $dna;}
-	}
-	my $DNAsequence = lc($DNAseq); ## Changing to lower case to fit with the translation hash
+	### Creating a single DNA string for codon verification
+	my $DNAseq = undef;
+	while (my $dna = <DNA>){chomp $dna;if ($dna =~ /^>/){next;}else{$DNAseq.= $dna;}}
+	my $DNAsequence = lc($DNAseq); ## Changing to lower case to fit with the codon check
 	my $contig_length = length($DNAsequence); ## Calculating the contig size
 	my $locus_tag = undef;
-	my $protein = undef;
-	while (my $line = <IN>){
+
+	while(my $line = <IN>){
 		chomp $line;
 		my @start = ();
 		my @stop = ();
@@ -123,7 +119,7 @@ while (my $file = shift@ARGV){
 			print TBL "\t\t\tprotein_id\tgnl|$instID|$locus_tag\n";
 			print TBL "\t\t\ttranscript_id\tgnl|$instID|$locus_tag"."_mRNA\n";
 		}	
-		elsif ($line =~ /FT\s+CDS\s+join\((.*)\)/){ ## Forward, multiple exon
+		elsif ($line =~ /FT\s+CDS\s+join\((.*)\)/){ ## Forward, multiple exons
 			my @array = split(',',$1);
 			my $mRNA = undef;
 			while (my $segment = shift@array){
@@ -173,7 +169,7 @@ while (my $file = shift@ARGV){
 			print TBL "\t\t\tprotein_id\tgnl|$instID|$locus_tag\n";
 			print TBL "\t\t\ttranscript_id\tgnl|$instID|$locus_tag"."_mRNA\n";
 		}
-		elsif ($line =~ /FT\s+CDS\s+complement\(join\((.*)/){ ## Reverse, mutiple exon
+		elsif ($line =~ /FT\s+CDS\s+complement\(join\((.*)/){ ## Reverse, mutiple exons
 			my @array = split(',',$1);
 			my $mRNA = undef;
 			while (my $segment = shift@array){
