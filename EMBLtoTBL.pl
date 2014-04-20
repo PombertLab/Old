@@ -5,7 +5,6 @@
 ## Converts EMBL files to NCBI TBL format for TBL2ASN.
 ## NOTE: Requires the EMBL files. the corresponding fasta inputs (*.fsa) and the products list in the same folder
 ## NOTE: Requires locus_tags to be defined in the EMBL files.
-## NOTE: codon_start features (\t\t\t\codon_start\t$value) for proteins located on the edges of contigs are not implemented yet.
 
 use strict;
 use warnings;
@@ -47,6 +46,7 @@ while(my $file = shift@ARGV){
 		my $num = undef;
 		my $dum = undef;
 		if ($line =~ /FT\s+\/locus_tag="(\DI09_\d+p\d+)"/){$locus_tag = $1;}  ## Defining the locus tags
+		elsif ($line =~ /FT\s+\/codon_start=(\d)/){print TBL "\t\t\tcodon_start\t$1\n";} ## Looking for phased codons
 		elsif ($line =~ /FT\s+CDS\s+(\d+)..(\d+)/){ ## Forward, single exon
 			my $start = $1;
 			my $stop = $2;
