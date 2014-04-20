@@ -2,8 +2,10 @@
 
 ## Pombert Lab, IIT, 2014
 
-## Converts EMBL files to NCBI TBL format for TBL2ASN
-## NOTE: Requires the EMBL and the corresponding fasta inputs (*.fsa) in the same folder
+## Converts EMBL files to NCBI TBL format for TBL2ASN.
+## NOTE: Requires the EMBL files. the corresponding fasta inputs (*.fsa) and the products list in the same folder
+## NOTE: Requires locus_tags to be defined in the EMBL files.
+## NOTE: codon_start features (\t\t\t\codon_start\t$value) for proteins located on the edges of contigs are not implemented yet.
 
 use strict;
 use warnings;
@@ -15,24 +17,14 @@ my $products = "products_list.txt"; ## Insert product list here
 my $usage = 'USAGE = EMBLtoTBL *.embl';
 die $usage unless @ARGV;
 
-sub numSort {
-		if ($a < $b) { return -1; }
-		elsif ($a == $b) { return 0;}
-		elsif ($a > $b) { return 1; }
-}
+sub numSort {if ($a < $b) { return -1; }elsif ($a == $b) { return 0;}elsif ($a > $b) { return 1; }}
 
-### Products list
+### Filling the products database
 my %hash = ();
 open HASH, "<$products";
-while (my $dbkey = <HASH>){
-	chomp $dbkey;
-	if ($dbkey =~ /^(\S+)\t(.*)$/){
-		my $prot = $1;
-		my $prod = $2;
-		$hash{$prot}=$prod;
-	}
-}
+while (my $dbkey = <HASH>){chomp $dbkey;if ($dbkey =~ /^(\S+)\t(.*)$/){my $prot = $1;my $prod = $2;$hash{$prot}=$prod;}}
 
+### Working on EMBL files
 while (my $file = shift@ARGV){
 	open IN, "<$file";
 	$file =~ s/.embl$//;
@@ -58,9 +50,7 @@ while (my $file = shift@ARGV){
 		my $asize = undef;
 		my $num = undef;
 		my $dum = undef;
-		if ($line =~ /FT\s+\/locus_tag="(\DI09_\d+p\d+)"/){
-			$locus_tag = $1;
-		}
+		if ($line =~ /FT\s+\/locus_tag="(\DI09_\d+p\d+)"/){$locus_tag = $1;}  ## Defining the locus tags
 		elsif ($line =~ /FT\s+CDS\s+(\d+)..(\d+)/){ ## Forward, single exon
 			my $start = $1;
 			my $stop = $2;
@@ -73,42 +63,26 @@ while (my $file = shift@ARGV){
 			if (($startcodon eq 'atg') && (($stopcodon eq 'taa') || ($stopcodon eq'tag') || ($stopcodon eq'tga'))){ ## =, =
 				print TBL "$start\t$stop\tCDS\n";
 				print TBL "\t\t\tlocus_tag\t$locus_tag\n";
-				if (exists $hash{$locus_tag}){
-					print TBL "\t\t\tproduct\t$hash{$locus_tag}\n";
-				}
-				else{
-					print TBL "\t\t\tproduct\thypothetical protein\n";
-				}
+				if (exists $hash{$locus_tag}){print TBL "\t\t\tproduct\t$hash{$locus_tag}\n";}
+				else{print TBL "\t\t\tproduct\thypothetical protein\n";}
 			}
 			elsif (($startcodon ne 'atg') && (($stopcodon eq 'taa') || ($stopcodon eq'tag') || ($stopcodon eq'tga'))){ ## !=, =
 				print TBL "<$start\t$stop\tCDS\n";
 				print TBL "\t\t\tlocus_tag\t$locus_tag\n";
-				if (exists $hash{$locus_tag}){
-					print TBL "\t\t\tproduct\t$hash{$locus_tag}\n";
-				}
-				else{
-					print TBL "\t\t\tproduct\thypothetical protein\n";
-				}
+				if (exists $hash{$locus_tag}){print TBL "\t\t\tproduct\t$hash{$locus_tag}\n";}
+				else{print TBL "\t\t\tproduct\thypothetical protein\n";}
 			}
 			elsif ($startcodon eq 'atg'){ ## =, !=
 				print TBL "$start\t>$stop\tCDS\n";
 				print TBL "\t\t\tlocus_tag\t$locus_tag\n";
-				if (exists $hash{$locus_tag}){
-					print TBL "\t\t\tproduct\t$hash{$locus_tag}\n";
-				}
-				else{
-					print TBL "\t\t\tproduct\thypothetical protein\n";
-				}
+				if (exists $hash{$locus_tag}){print TBL "\t\t\tproduct\t$hash{$locus_tag}\n";}
+				else{print TBL "\t\t\tproduct\thypothetical protein\n";}
 			}
 			else{ ## !=, !=
 				print TBL "<$start\t>$stop\tCDS\n";
 				print TBL "\t\t\tlocus_tag\t$locus_tag\n";
-				if (exists $hash{$locus_tag}){
-					print TBL "\t\t\tproduct\t$hash{$locus_tag}\n";
-				}
-				else{
-					print TBL "\t\t\tproduct\thypothetical protein\n";
-				}
+				if (exists $hash{$locus_tag}){print TBL "\t\t\tproduct\t$hash{$locus_tag}\n";}
+				else{print TBL "\t\t\tproduct\thypothetical protein\n";}
 			}
 			print TBL "\t\t\tprotein_id\tgnl|$instID|$locus_tag\n";
 			print TBL "\t\t\ttranscript_id\tgnl|$instID|$locus_tag"."_mRNA\n";
@@ -125,42 +99,26 @@ while (my $file = shift@ARGV){
 			if (($startcodon eq 'cat') && (($stopcodon eq 'tta') || ($stopcodon eq'cta') || ($stopcodon eq'tca'))){ ## =, =
 				print TBL "$start\t$stop\tCDS\n";
 				print TBL "\t\t\tlocus_tag\t$locus_tag\n";
-				if (exists $hash{$locus_tag}){
-					print TBL "\t\t\tproduct\t$hash{$locus_tag}\n";
-				}
-				else{
-					print TBL "\t\t\tproduct\thypothetical protein\n";
-				}
+				if (exists $hash{$locus_tag}){print TBL "\t\t\tproduct\t$hash{$locus_tag}\n";}
+				else{print TBL "\t\t\tproduct\thypothetical protein\n";}
 			}
 			elsif (($startcodon ne 'cat') && (($stopcodon eq 'tta') || ($stopcodon eq'cta') || ($stopcodon eq'tca'))){ ## !=, =
 				print TBL "<$start\t$stop\tCDS\n";
 				print TBL "\t\t\tlocus_tag\t$locus_tag\n";
-				if (exists $hash{$locus_tag}){
-					print TBL "\t\t\tproduct\t$hash{$locus_tag}\n";
-				}
-				else{
-					print TBL "\t\t\tproduct\thypothetical protein\n";
-				}
+				if (exists $hash{$locus_tag}){print TBL "\t\t\tproduct\t$hash{$locus_tag}\n";}
+				else{print TBL "\t\t\tproduct\thypothetical protein\n";}
 			}
 			elsif ($startcodon eq 'cat'){ ## =, !=
 				print TBL "$start\t>$stop\tCDS\n";
 				print TBL "\t\t\tlocus_tag\t$locus_tag\n";
-				if (exists $hash{$locus_tag}){
-					print TBL "\t\t\tproduct\t$hash{$locus_tag}\n";
-				}
-				else{
-					print TBL "\t\t\tproduct\thypothetical protein\n";
-				}
+				if (exists $hash{$locus_tag}){print TBL "\t\t\tproduct\t$hash{$locus_tag}\n";}
+				else{print TBL "\t\t\tproduct\thypothetical protein\n";}
 			}
 			else{ ## !=, !=
 				print TBL "<$start\t>$stop\tCDS\n";
 				print TBL "\t\t\tlocus_tag\t$locus_tag\n";
-				if (exists $hash{$locus_tag}){
-					print TBL "\t\t\tproduct\t$hash{$locus_tag}\n";
-				}
-				else{
-					print TBL "\t\t\tproduct\thypothetical protein\n";
-				}
+				if (exists $hash{$locus_tag}){print TBL "\t\t\tproduct\t$hash{$locus_tag}\n";}
+				else{print TBL "\t\t\tproduct\thypothetical protein\n";}
 			}
 			print TBL "\t\t\tprotein_id\tgnl|$instID|$locus_tag\n";
 			print TBL "\t\t\ttranscript_id\tgnl|$instID|$locus_tag"."_mRNA\n";
