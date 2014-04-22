@@ -1,8 +1,8 @@
 #!/usr/bin/perl
 
 ## Pombert Lab, IIT, 2014
-
-## Writes predicted proteins to a separate FASTA file with the .prot extension.
+## Version 1.1
+## Writes predicted proteins and mRNAs to separate FASTA files with the .prot and .mRNA extensions.
 ## NOTE: Requires the EMBL and the corresponding fasta inputs (*.fsa) in the same folder
 
 use strict;
@@ -13,17 +13,14 @@ my $usage = 'USAGE = EMBLtoPROT *.embl';
 
 die $usage unless @ARGV;
 
-sub numSort {
-		if ($a < $b) { return -1; }
-		elsif ($a == $b) { return 0;}
-		elsif ($a > $b) { return 1; }
-}
+sub numSort {if ($a < $b) {return -1;} elsif ($a == $b) {return 0;} elsif ($a > $b) {return 1;}}
 
 while (my $file = shift@ARGV){
 	open IN, "<$file";
 	$file =~ s/.embl$//;
 	open DNA, "<$file.fsa";
 	open PROT, ">$file.prot";
+	open MRNA, ">$file.mRNA";
 	
 	### Creating a single DNA string for protein translation
 	my $DNAseq= undef;
@@ -50,6 +47,7 @@ while (my $file = shift@ARGV){
 	
 	my $locus_tag = undef;
 	my $protein = undef;
+	my $mRNA = undef;
 	while (my $line = <IN>){
 		chomp $line;
 		if ($line =~ /FT                   \/locus_tag="(\DI09_\d+p\d+)"/){
@@ -58,22 +56,26 @@ while (my $file = shift@ARGV){
 		elsif ($line =~ /FT   CDS             (\d+)..(\d+)/){ ## Forward, single exon
 			my $start = $1;
 			my $stop = $2;
+			my $lg = ($stop - $start +1);
 			$start--;
 			$stop--;
+			$mRNA = substr($DNAsequence, $start, $lg);
 			for(my $i = $start; $i < ($stop - 2); $i += 3){
 				my $codon = substr($DNAsequence, $i, 3);
 				if (exists  $aa{$codon}){$protein .=  $aa{$codon};}
 				else {$protein .= 'X';}
 			}
+			print MRNA ">$locus_tag\n";
+			print MRNA "$mRNA\n";
 			print PROT ">$locus_tag\n";
 			print PROT "$protein\n";
 			$protein=undef;
+			$mRNA=undef;
 		}
 		elsif ($line =~ /FT   CDS             join\((.*)\)/){ ## Forward, multiple exon
 			my @array = split(',',$1);
 			my @start = ();
 			my @stop = ();
-			my $mRNA = undef;
 			while (my $segment = shift@array){
 				chomp $segment;
 				if ($segment =~ /(\d+)..(\d+)/){
@@ -96,24 +98,32 @@ while (my $file = shift@ARGV){
 				if (exists  $aa{$codon}){$protein .=  $aa{$codon};}
 				else {$protein .= 'X';}			
 			}
+			print MRNA ">$locus_tag\n";
+			print MRNA "$mRNA\n";
 			print PROT ">$locus_tag\n";
 			print PROT "$protein\n";
 			$protein=undef;
+			$mRNA=undef;
 		}
 		elsif ($line =~ /FT   CDS             complement\((\d+)..(\d+)\)/){ ## Reverse, single exon
 			my $start = $2;
 			my $stop = $1;
-			my $revmRNA =  substr($DNAsequence, $stop, ($start-$stop));
-			my $mRNA = reverse($revmRNA);
+			$start--;
+			$stop--;
+			my $revmRNA =  substr($DNAsequence, ($stop), ($start-$stop+1));
+			$mRNA = reverse($revmRNA);
 			$mRNA =~ tr/ATGCRYSWKMBDHVatgcryswkmbdhv/TACGYRWSMKVHDBtacgyrwsmkvhdb/;
-			for(my $i = 0; $i < (length($mRNA) - 2); $i += 3){
+			for(my $i = 0; $i < (length($mRNA) - 5); $i += 3){
 				my $codon = substr($mRNA, $i, 3);
 				if (exists  $aa{$codon}){$protein .=  $aa{$codon};}
 				else {$protein .= 'X';}
 			}
+			print MRNA ">$locus_tag\n";
+			print MRNA "$mRNA\n";
 			print PROT ">$locus_tag\n";
 			print PROT "$protein\n";
 			$protein=undef;
+			$mRNA=undef;
 		}
 		elsif ($line =~ /FT   CDS             complement\(join\((.*)/){ ## Reverse, mutiple exon
 			my @array = split(',',$1);
@@ -140,13 +150,15 @@ while (my $file = shift@ARGV){
 			foreach my $subs (0..$num){
 					$revmRNA .= substr($DNAsequence, $sstart[$subs], (($sstop[$subs]-$sstart[$subs])+1));
 			}
-			my $mRNA = reverse($revmRNA);
+			$mRNA = reverse($revmRNA);
 			$mRNA =~ tr/ATGCRYSWKMBDHVatgcryswkmbdhv/TACGYRWSMKVHDBtacgyrwsmkvhdb/;
 			for(my $i = 0; $i < (length($mRNA) - 5); $i += 3){
 				my $codon = substr($mRNA, $i, 3);
 				if (exists  $aa{$codon}){$protein .=  $aa{$codon};}
 				else {$protein .= 'X';}			
 			}
+			print MRNA ">$locus_tag\n";
+			print MRNA "$mRNA\n";
 			print PROT ">$locus_tag\n";
 			print PROT "$protein\n";
 			$protein=undef;
@@ -156,3 +168,4 @@ while (my $file = shift@ARGV){
 }
 close IN;
 close PROT;
+close MRNA;
