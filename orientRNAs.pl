@@ -34,8 +34,8 @@ while (my $line = <FASTA>){
 $fasta{$key}=$seq;
 ## End of hash
 
+## Parsing the blast output
 my %blast = ();
-
 while (my $line = <BLAST>){
 	chomp $line;
 	if ($line =~ /(\S+)\t(\S+)\t(\S+)\t(\S+)\t(\S+)\t(\S+)\t(\S+)\t(\S+)\t(\S+)\t(\S+)\t(\S+)\t(\S+)/){
@@ -67,6 +67,8 @@ while (my $line = <BLAST>){
 		}
 	}
 }
+
+## Writing the sequences without any blast hit into a separate file
 while (my $sequence = shift@list){
 	chomp $sequence;
 	if (exists $blast{$sequence}){next;}
