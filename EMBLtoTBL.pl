@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 
-## Pombert Lab, IIT, 2014
+## Pombert Lab, IIT, 2016
+## Version 1.1
 
 ## Converts EMBL files to NCBI TBL format for TBL2ASN.
 ## NOTE: Requires the EMBL files. the corresponding fasta inputs (*.fsa) and the products list in the same folder
@@ -11,7 +12,7 @@ use warnings;
 use Bio::SeqIO;
 
 my $instID = 'IITBIO'; ## Insert desired institute ID here
-my $products = "products_list.txt"; ## Insert product list here
+my $products = "Verified_products_ALL.list"; ## Insert product list here
 
 my $usage = 'USAGE = EMBLtoTBL *.embl';
 die $usage unless @ARGV;
@@ -45,7 +46,31 @@ while(my $file = shift@ARGV){
 		my $asize = undef;
 		my $num = undef;
 		my $dum = undef;
-		if ($line =~ /FT\s+\/locus_tag="(\DI09_\d+p\d+)"/){$locus_tag = $1;}  ## Defining the locus tags
+		
+		### Defining the locus tags
+		if ($line =~ /FT\s+\/locus_tag="(\w+_\d+p\d+)"/){$locus_tag = $1;}
+		
+		### Working on tRNAs/rRNAs (introns not implemented)
+		elsif ($line =~ /FT\s+(tRNA|rRNA)\s+(\d+)..(\d+)/){ ## Forward, single exon
+			my $type = $1;
+			my $start = $2;
+			my $stop = $3;
+			print TBL "$start\t$stop\tgene\n";
+			print TBL "\t\t\tlocus_tag\t$locus_tag\n";
+			print TBL "$start\t$stop\t$type\n";
+			print TBL "\t\t\tproduct\t$hash{$locus_tag}\n";
+		}
+		elsif ($line =~ /FT\s+(tRNA|rRNA)\s+complement\((\d+)..(\d+)\)/){ ## Reverse, single exon
+			my $type = $1;
+			my $start = $2;
+			my $stop = $3;
+			print TBL "$start\t$stop\tgene\n";
+			print TBL "\t\t\tlocus_tag\t$locus_tag\n";
+			print TBL "$start\t$stop\t$type\n";
+			print TBL "\t\t\tproduct\t$hash{$locus_tag}\n";
+		}
+		
+		### Working on CDS
 		elsif ($line =~ /FT\s+\/codon_start=(\d)/){print TBL "\t\t\tcodon_start\t$1\n";} ## Looking for phased codons
 		elsif ($line =~ /FT\s+CDS\s+(\d+)..(\d+)/){ ## Forward, single exon
 			my $start = $1;
@@ -54,7 +79,11 @@ while(my $file = shift@ARGV){
 			my $stopcodon = substr($DNAsequence, $stop-3, 3);
 			print TBL "<$start\t>$stop\tgene\n";
 			print TBL "\t\t\tlocus_tag\t$locus_tag\n";
+			## Defining mRNA
 			print TBL "<$start\t>$stop\tmRNA\n";
+			print TBL "\t\t\tlocus_tag\t$locus_tag\n";
+			print TBL "\t\t\tproduct\t$hash{$locus_tag}\n";
+			print TBL "\t\t\tprotein_id\tgnl|$instID|$locus_tag\n";
 			print TBL "\t\t\ttranscript_id\tgnl|$instID|$locus_tag"."_mRNA\n";
 			if (($startcodon eq 'atg') && (($stopcodon eq 'taa') || ($stopcodon eq'tag') || ($stopcodon eq'tga'))){ ## =, =
 				print TBL "$start\t$stop\tCDS\n";
@@ -90,7 +119,11 @@ while(my $file = shift@ARGV){
 			my $stopcodon = substr($DNAsequence, $stop-1, 3);
 			print TBL "<$start\t>$stop\tgene\n";
 			print TBL "\t\t\tlocus_tag\t$locus_tag\n";
+			## defining mRNA
 			print TBL "<$start\t>$stop\tmRNA\n";
+			print TBL "\t\t\tlocus_tag\t$locus_tag\n";
+			print TBL "\t\t\tproduct\t$hash{$locus_tag}\n";
+			print TBL "\t\t\tprotein_id\tgnl|$instID|$locus_tag\n";
 			print TBL "\t\t\ttranscript_id\tgnl|$instID|$locus_tag"."_mRNA\n";
 			if (($startcodon eq 'cat') && (($stopcodon eq 'tta') || ($stopcodon eq'cta') || ($stopcodon eq'tca'))){ ## =, =
 				print TBL "$start\t$stop\tCDS\n";
@@ -147,6 +180,9 @@ while(my $file = shift@ARGV){
 				foreach my $subs (1..$dum){print TBL "$start[$subs]\t$stop[$subs]\n";}
 				print TBL "$start[$num]\t>$stop[$num]\n";	
 			}
+			print TBL "\t\t\tlocus_tag\t$locus_tag\n";
+			print TBL "\t\t\tproduct\t$hash{$locus_tag}\n";
+			print TBL "\t\t\tprotein_id\tgnl|$instID|$locus_tag\n";
 			print TBL "\t\t\ttranscript_id\tgnl|$instID|$locus_tag"."_mRNA\n";
 			
 			### Printing CDS info
@@ -199,6 +235,9 @@ while(my $file = shift@ARGV){
 				foreach my $subs (1..$dum){print TBL "$start[$subs]\t$stop[$subs]\n";}
 				print TBL "$start[$num]\t>$stop[$num]\n";	
 			}
+			print TBL "\t\t\tlocus_tag\t$locus_tag\n";
+			print TBL "\t\t\tproduct\t$hash{$locus_tag}\n";
+			print TBL "\t\t\tprotein_id\tgnl|$instID|$locus_tag\n";
 			print TBL "\t\t\ttranscript_id\tgnl|$instID|$locus_tag"."_mRNA\n";
 			
 			### Printing CDS info

@@ -8,6 +8,7 @@ EMBLtoTBL.pl - Converts EMBL files to NCBI TBL files for TBL2ASN.
 FASTQtoFASTA.pl - Converts FASTQ files to FASTA files and their associated QUAL files. Autodetects Sanger/illumina encoding.
 orientRNAs - Reorient RNAs in a multifasta file according to their top blast hits.
 removeTP.pl - Removes NexteraXT transposon sequences from FASTQ files.
+runTaxonomizedBLAST.pl - Runs NCBI blast locally with taxonomic IDs (requires locally-installed NCBI NR, NT and TaxDB databases)
 SeqIO.pl - Interconverts common formats. Based on BioPerl's SeqIO module. Requires local installation of BioPerl.
 SFFtoFASTA.pl - Converts SSF files to FASTA format. Requires SFFINFO from the gsAssembler suite.
 SFFtoFASTQ.pl - Converts SSF files to FASTQ format. Requires SFFINFO from the gsAssembler suite.
