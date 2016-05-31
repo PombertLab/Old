@@ -1,7 +1,7 @@
 Genomics
 ========
 
-Contains useful scripts for genomics.
+Contains miscellaneous scripts for genomics.
 
 FASTQtoFASTA.pl         - Converts FASTQ files to FASTA/QUAL files. Autodetects Sanger/illumina encoding.
 orientRNAs              - Reorient RNAs in a multifasta file according to their top blast hits.
