@@ -1,6 +1,3 @@
-Genomics
-========
-
 Contains miscellaneous scripts for genomics
 
 - FASTQtoFASTA.pl         - Converts FASTQ files to FASTA/QUAL files. Autodetects Sanger/illumina encoding
