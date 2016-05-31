@@ -5,7 +5,7 @@ Contains useful scripts for genomics.
 
 EMBLtoPROT.pl           - Extracts protein and mRNA sequences from EMBL files.
 EMBLtoTBL.pl            - Converts EMBL files to NCBI TBL files for TBL2ASN.
-FASTQtoFASTA.pl         - Converts FASTQ files to FASTA files and their associated QUAL files. Autodetects Sanger/illumina encoding.
+FASTQtoFASTA.pl         - Converts FASTQ files to FASTA/QUAL files. Autodetects Sanger/illumina encoding.
 orientRNAs              - Reorient RNAs in a multifasta file according to their top blast hits.
 removeTP.pl             - Removes NexteraXT transposon sequences from FASTQ files.
 runTaxonomizedBLAST.pl  - Runs NCBI blast locally with taxonomic IDs (requires locally-installed NCBI NR, NT and TaxDB databases)
