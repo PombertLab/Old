@@ -2,6 +2,8 @@ Contains miscellaneous scripts for genomics
 
 - FASTQtoFASTA.pl         - Converts FASTQ files to FASTA/QUAL files. Autodetects Sanger/illumina encoding
 
+- get_SRA.pl             - Downloads SRA files from the NCBI FTP site 
+
 - orientRNAs              - Reorient RNAs in a multifasta file according to their top blast hits
 
 - removeTP.pl            - Removes NexteraXT transposon sequences from FASTQ files
