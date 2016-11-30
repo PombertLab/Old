@@ -12,7 +12,7 @@ use warnings;
 use Bio::SeqIO;
 
 my $instID = 'IITBIO'; ## Insert desired institute ID here
-my $products = "Verified_products_ALL.list"; ## Insert product list here
+my $products = "products.list"; ## Insert product list here
 
 my $usage = 'USAGE = EMBLtoTBL *.embl';
 die $usage unless @ARGV;
@@ -48,7 +48,7 @@ while(my $file = shift@ARGV){
 		my $dum = undef;
 		
 		### Defining the locus tags
-		if ($line =~ /FT\s+\/locus_tag="(\w+_\d+p\d+)"/){$locus_tag = $1;}
+		if ($line =~ /FT\s+\/locus_tag="(\w+)"/){$locus_tag = $1;}
 		
 		### Working on tRNAs/rRNAs (introns not implemented)
 		elsif ($line =~ /FT\s+(tRNA|rRNA)\s+(\d+)..(\d+)/){ ## Forward, single exon
