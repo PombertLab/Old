@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
-## Pombert Lab, IIT, 2014
-## Version 1.2: Added a verification check for codon_start features
+## Pombert Lab, IIT, 2017
+## Version 1.3: corrected regex and improved output
 ## Writes predicted proteins and mRNAs to separate FASTA files with the .prot and .mRNA extensions.
 ## NOTE: Requires the EMBL and the corresponding fasta inputs (*.fsa) in the same folder
 
@@ -10,8 +10,7 @@ use warnings;
 use Bio::SeqIO;
 
 my $usage = 'USAGE = EMBLtoPROT *.embl';
-
-die $usage unless @ARGV;
+die "\n$usage\n\n" unless @ARGV;
 
 sub numSort {
 		if ($a < $b) { return -1; }
@@ -20,6 +19,8 @@ sub numSort {
 }
 
 my $locus_tag = undef;
+my $protein = undef;
+my $mRNA = undef;
 
 while (my $file = shift@ARGV){
 	open IN, "<$file";
@@ -54,16 +55,15 @@ while (my $file = shift@ARGV){
 	### Create hashes to adjust for codon_start features 
 	my %coord = ();
 	my %codon_start = ();
-	my @feat = ();
+	my @feat = (); my $feature;
 	while (my $line = <IN>){
 		chomp $line;
-		if ($line =~ /FT                   \/locus_tag="(\DI09_\d+p\d+)"/){$locus_tag = $1; push(@feat, $locus_tag);}
-		elsif ($line =~ /FT   CDS/){$coord{$locus_tag} = $line;}
+		if ($line =~ /^FT   gene/){$feature = 'gene';}
+		elsif (($line =~ /FT                   \/locus_tag="(.*)\"/) && ($feature eq 'gene')){$locus_tag = $1; push(@feat, $locus_tag);}
+		elsif ($line =~ /FT   CDS/){$coord{$locus_tag} = $line; $feature = 'CDS';}
 		elsif ($line =~ /FT\s+\/codon_start=(\d+)/){$codon_start{$locus_tag} = $1;}
 	}
 	
-	my $protein = undef;
-	my $mRNA = undef;
 	while (my $locus = shift@feat){
 		chomp $locus;
 		my $line = $coord{$locus}; ## Fetch corresponding coordinates line
@@ -86,12 +86,9 @@ while (my $file = shift@ARGV){
 				if (exists  $aa{$codon}){$protein .=  $aa{$codon};}
 				else {$protein .= 'X';}
 			}
-			print MRNA ">$locus\n";
-			print MRNA "$mRNA\n";
-			print PROT ">$locus\n";
-			print PROT "$protein\n";
-			$protein=undef;
-			$mRNA=undef;
+			print MRNA ">$locus\n"; rna();
+			print PROT ">$locus\n"; prot();
+			$mRNA=undef; $protein=undef;
 		}
 		elsif ($line =~ /FT   CDS             join\((.*)\)/){ ## Forward, multiple exon
 			my @array = split(',',$1);
@@ -119,12 +116,9 @@ while (my $file = shift@ARGV){
 				if (exists  $aa{$codon}){$protein .=  $aa{$codon};}
 				else {$protein .= 'X';}			
 			}
-			print MRNA ">$locus\n";
-			print MRNA "$mRNA\n";
-			print PROT ">$locus\n";
-			print PROT "$protein\n";
-			$protein=undef;
-			$mRNA=undef;
+			print MRNA ">$locus\n"; rna();
+			print PROT ">$locus\n"; prot();
+			$mRNA=undef; $protein=undef; 
 		}
 		elsif ($line =~ /FT   CDS             complement\((\d+)..(\d+)\)/){ ## Reverse, single exon
 			my $start = $2;
@@ -140,12 +134,9 @@ while (my $file = shift@ARGV){
 				if (exists  $aa{$codon}){$protein .=  $aa{$codon};}
 				else {$protein .= 'X';}
 			}
-			print MRNA ">$locus\n";
-			print MRNA "$mRNA\n";
-			print PROT ">$locus\n";
-			print PROT "$protein\n";
-			$protein=undef;
-			$mRNA=undef;
+			print MRNA ">$locus\n";  rna();
+			print PROT ">$locus\n"; prot();
+			$mRNA=undef; $protein=undef;
 		}
 		elsif ($line =~ /FT   CDS             complement\(join\((.*)/){ ## Reverse, mutiple exon
 			my @array = split(',',$1);
@@ -179,14 +170,21 @@ while (my $file = shift@ARGV){
 				if (exists  $aa{$codon}){$protein .=  $aa{$codon};}
 				else {$protein .= 'X';}			
 			}
-			print MRNA ">$locus\n";
-			print MRNA "$mRNA\n";
-			print PROT ">$locus\n";
-			print PROT "$protein\n";
-			$protein=undef;
-			$mRNA = undef;
+			print MRNA ">$locus\n"; rna();
+			print PROT ">$locus\n"; prot();
+			$mRNA = undef; $protein=undef; 
 		}
 	}
 }
 close IN;
 close PROT;
+
+## subroutines
+sub prot{
+	my @PROTEIN = unpack ("(A60)*", $protein);
+	while (my $tmp = shift@PROTEIN){print PROT "$tmp\n";}
+}
+sub rna{
+	my @RNA = unpack ("(A60)*", $mRNA);
+	while (my $tmp = shift@RNA){print MRNA "$tmp\n";}
+}

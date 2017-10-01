@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
-## Pombert Lab, IIT, 2016
-
+## Pombert Lab, IIT, 2017
+## Version 3.2
 ## Converts WebApollo GFF3 files to EMBL files and writes annotated proteins and mRNAs to a separate FASTA files with the .prot and .mRNA extensions.
 ## Generates locus tags automatically based on the provided prefix.
 ## NOTE: Requires the GFF3 outputs (*.gff3) and the corresponding fasta inputs (*.fsa) in the same folder
@@ -12,11 +12,13 @@ use warnings;
 use Bio::SeqIO;
 
 my $usage = 'USAGE = WebApolloGFF3toEMBL.pl LOCUS_TAG_PREFIX *.gff3';
-die $usage unless @ARGV;
+die "\n$usage\n\n" unless @ARGV;
 
 my $locus_tag_prefix = shift@ARGV;
 my $locus_id = 10;
 my $contig_number = 0;
+my $protein = undef;
+my $mRNA =undef;
 
 while (my $file = shift@ARGV){
 	open IN, "<$file";
@@ -25,7 +27,7 @@ while (my $file = shift@ARGV){
 	open OUT, ">$file.embl";
 	open PROT, ">$file.prot";
 	open MRNA, ">$file.mRNA";
-	$contig_number++;
+	if ($file =~ /(\d+)$/){$contig_number = $1;}
 	
 	### Creating a single DNA string for protein translation
 	my $DNAseq= undef;
@@ -34,16 +36,16 @@ while (my $file = shift@ARGV){
 		if ($dna =~ /^>/){next;}
 		else{$DNAseq.= $dna;}
 	}
-	my $DNAsequence = lc($DNAseq); ## Changing to lower case to fit with the translation hash
-	my $contig_length = length($DNAsequence); ## Calculating the contig size
+	my $DNAsequence = lc($DNAseq); 				## Changing to lower case to fit with the translation hash
+	my $contig_length = length($DNAsequence);	## Calculating the contig size
 	
 	### Init hashes, arrays and values
-	my $geneid = 0; ## Initialize gene id
-	my $CDS_counter = 0; ## Initialize CDS counter
-	my %gene = (); ## Initialize gene hash
-	my %exon = (); ## Initialize exon hash
-	my %strands = (); ## Initialize strandedness hash
-	my @todo = (); ## Initialize array of things to do
+	my $geneid = 0;		## Initialize gene id
+	my $CDS_counter = 0;	## Initialize CDS counter
+	my %gene = ();		## Initialize gene hash
+	my %exon = ();		## Initialize exon hash
+	my %strands = ();		## Initialize strandedness hash
+	my @todo = ();		## Initialize array of things to do
 	my %aa = ('tca'=>'S','tcc'=>'S','tcg'=>'S','tct'=>'S','tcy'=>'S','tcr'=>'S','tcw'=>'S','tcs'=>'S','tck'=>'S','tcm'=>'S','tcb'=>'S','tcd'=>'S','tch'=>'S','tcv'=>'S','tcn'=>'S',
 	'ttc'=>'F','ttt'=>'F','tty'=>'F','tta'=>'L','ttg'=>'L','ttr'=>'L','tac'=>'Y','tat'=>'Y','tay'=>'Y','taa'=>'*','tag'=>'*','tga'=>'*','tgc'=>'C','tgt'=>'C','tgy'=>'C',
 	'tgg'=>'W','cta'=>'L','ctc'=>'L','ctg'=>'L','ctt'=>'L','cty'=>'L','ctr'=>'L','cts'=>'L','ctw'=>'L','ctk'=>'L','ctm'=>'L','ctb'=>'L','ctd'=>'L','cth'=>'L','ctv'=>'L','ctn'=>'L',
@@ -91,42 +93,35 @@ while (my $file = shift@ARGV){
 	while (my $list = shift@sorted_todo){
 		if ($strands{$list} eq '+'){ ## Looking for positive strandedness
 			
-			### Work on gene features
+			### Working on gene features
 			my $locus_number = sprintf("%05d", $locus_id);
 			my $contig = sprintf("%02d", $contig_number);
 			print OUT 'FT   gene             '."$gene{$list}[0]".'..'."$gene{$list}[1]"."\n";
 			print OUT 'FT                   /locus_tag="'."$locus_tag_prefix".'_'."$contig".'p'."$locus_number".'"'."\n";
 			$locus_id += 10;
 				
-			### Work on CDS features
+			### Working on CDS features
 			my $cds_count = scalar(@{$exon{$list}});
 			my $end = ($cds_count - 1);
 			my $num = ($cds_count - 2);
 			my $stopcodon = $exon{$list}[$end];			
 			
-			if (scalar(@{$exon{$list}}) == 2){ ## Verify if we have a single exon
+			if (scalar(@{$exon{$list}}) == 2){ ## Verifying if we have a single exon
 				print OUT 'FT   CDS             '."$exon{$list}[0]..$stopcodon\n";
 				print OUT 'FT                   /locus_tag="'."$locus_tag_prefix".'_'."$contig".'p'."$locus_number".'"'."\n";
 				print PROT ">$locus_tag_prefix".'_'."$contig".'p'."$locus_number\n";
 				print MRNA ">$locus_tag_prefix".'_'."$contig".'p'."$locus_number\n";
 				my $start = (($exon{$list}[0]));
 				my $stop = (($exon{$list}[1]));
-				my $protein = undef;
-				my $mRNA =  substr($DNAsequence, $start-1, (($stop-$start)+1));
+				$protein = undef;
+				$mRNA =  substr($DNAsequence, $start-1, (($stop-$start)+1));
 				for(my $i = 0; $i < (length($mRNA) - 5); $i += 3){ ## -2 if stop codon (*) desired, -5 if not
 					my $codon = substr($mRNA, $i, 3);
 					$protein .=  $aa{$codon};				
 				}
-				my @PROTEIN = unpack ("(A60)*", $protein);
-				while (my $tmp = shift@PROTEIN){
-					print PROT "$tmp\n";
-				}
-				my @RNA = unpack ("(A60)*", $mRNA);
-				while (my $tmp = shift@RNA){
-					print MRNA "$tmp\n";
-				}
+				prot(); rna();
 			}
-			elsif (scalar(@{$exon{$list}}) > 2){ ## Verify if we have more than one exon
+			elsif (scalar(@{$exon{$list}}) > 2){ ## Verifying if we have more than one exon
 				print OUT 'FT   CDS             '."join($exon{$list}[0]..";
 				print PROT ">$locus_tag_prefix".'_'."$contig".'p'."$locus_number\n";
 				print MRNA ">$locus_tag_prefix".'_'."$contig".'p'."$locus_number\n";
@@ -137,8 +132,8 @@ while (my $file = shift@ARGV){
 				print OUT "$stopcodon)\n";
 				print OUT 'FT                   /locus_tag="'."$locus_tag_prefix".'_'."$contig".'p'."$locus_number".'"'."\n";
 				
-				my $mRNA = undef;
-				my $protein = undef;
+				$mRNA = undef;
+				$protein = undef;
 				my $tmp1 = undef;
 				my $tmp2 = undef;
 				foreach my $subs (0..$end){
@@ -154,57 +149,43 @@ while (my $file = shift@ARGV){
 					my $codon = substr($mRNA, $i, 3);
 					$protein .=  $aa{$codon};				
 				}
-				my @PROTEIN = unpack ("(A60)*", $protein);
-				while (my $tmp = shift@PROTEIN){
-					print PROT "$tmp\n";
-				}
-				my @RNA = unpack ("(A60)*", $mRNA);
-				while (my $tmp = shift@RNA){
-					print MRNA "$tmp\n";
-				}
+				prot(); rna();
 			}
 		}
 		if ($strands{$list} eq '-'){ ## Looking for positive strandedness
 			
-			### Work on gene features
+			### Working on gene features
 			my $locus_number = sprintf("%05d", $locus_id);
 			my $contig = sprintf("%02d", $contig_number);
 			print OUT 'FT   gene             complement('."$gene{$list}[0]".'..'."$gene{$list}[1]".')'."\n";
 			print OUT 'FT                   /locus_tag="'."$locus_tag_prefix".'_'."$contig".'p'."$locus_number".'"'."\n";
 			$locus_id += 10;
 				
-			### Work on CDS features
+			### Working on CDS features
 			my $cds_count = scalar(@{$exon{$list}});
 			my $end = ($cds_count - 1);
 			my $num = ($cds_count - 2);
 			my @reversed = reverse(@{$exon{$list}}); ## Reversing the list of exons
 			my $stopcodon = $reversed[$end];	
 			
-			if (scalar(@reversed) == 2){ ## Verify if we have a single exon
+			if (scalar(@reversed) == 2){ ## Verifying if we have a single exon
 				print OUT 'FT   CDS             complement('."$reversed[0]..$reversed[1]".')'."\n";
 				print OUT 'FT                   /locus_tag="'."$locus_tag_prefix".'_'."$contig".'p'."$locus_number".'"'."\n";
 				print PROT ">$locus_tag_prefix".'_'."$contig".'p'."$locus_number\n";
 				print MRNA ">$locus_tag_prefix".'_'."$contig".'p'."$locus_number\n";
 				my $start = (($reversed[0]));
 				my $stop = (($reversed[1]));
-				my $protein = undef;
+				$protein = undef;
 				my $revmRNA =  substr($DNAsequence, $start-1, (($stop-$start)+1));
-				my $mRNA = reverse($revmRNA);
+				$mRNA = reverse($revmRNA);
 				$mRNA =~ tr/ATGCRYSWKMBDHVatgcryswkmbdhv/TACGYRWSMKVHDBtacgyrwsmkvhdb/;
 				for(my $i = 0; $i < (length($mRNA) - 5); $i += 3){ ## -2 if stop codon (*) desired, -5 if not
 					my $codon = substr($mRNA, $i, 3);
 					$protein .=  $aa{$codon};				
 				}
-				my @PROTEIN = unpack ("(A60)*", $protein);
-				while (my $tmp = shift@PROTEIN){
-					print PROT "$tmp\n";
-				}
-				my @RNA = unpack ("(A60)*", $mRNA);
-				while (my $tmp = shift@RNA){
-					print MRNA "$tmp\n";
-				}				
+				prot(); rna();		
 			}
-			elsif (scalar(@reversed) > 2){ ## Verify if we have more than one exon
+			elsif (scalar(@reversed) > 2){ ## Verifying if we have more than one exon
 				print OUT 'FT   CDS             complement('."join($reversed[0]..";
 				print PROT ">$locus_tag_prefix".'_'."$contig".'p'."$locus_number\n";
 				print MRNA ">$locus_tag_prefix".'_'."$contig".'p'."$locus_number\n";
@@ -216,7 +197,7 @@ while (my $file = shift@ARGV){
 				print OUT 'FT                   /locus_tag="'."$locus_tag_prefix".'_'."$contig".'p'."$locus_number".'"'."\n";
 	
 				my $revmRNA = undef;
-				my $protein = undef;
+				$protein = undef;
 				my $tmp1 = undef;
 				my $tmp2 = undef;
 				foreach my $subs (0..$end){
@@ -234,14 +215,7 @@ while (my $file = shift@ARGV){
 					my $codon = substr($mRNA, $i, 3);
 					$protein .=  $aa{$codon};				
 				}
-				my @PROTEIN = unpack ("(A60)*", $protein);
-				while (my $tmp = shift@PROTEIN){
-					print PROT "$tmp\n";
-				}
-				my @RNA = unpack ("(A60)*", $mRNA);
-				while (my $tmp = shift@RNA){
-					print MRNA "$tmp\n";
-				}
+				prot(); rna();
 			}
 		}
 	}
@@ -262,3 +236,13 @@ while (my $file = shift@ARGV){
 }
 close IN;
 close OUT;
+
+## Subroutines
+sub prot{
+	my @PROTEIN = unpack ("(A60)*", $protein);
+	while (my $tmp = shift@PROTEIN){print PROT "$tmp\n";}
+}
+sub rna{
+	my @RNA = unpack ("(A60)*", $mRNA);
+	while (my $tmp = shift@RNA){print MRNA "$tmp\n";}
+}
