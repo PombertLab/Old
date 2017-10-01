@@ -2,7 +2,8 @@
 
 ## Pombert Lab, IIT, 2017
 ## Version 3.2
-## Converts WebApollo GFF3 files to EMBL files and writes annotated proteins and mRNAs to a separate FASTA files with the .prot and .mRNA extensions.
+## Converts WebApollo GFF3 files to EMBL files and writes proteins and mRNAs to separate FASTA files with the
+## .prot and .mRNA extensions.
 ## Generates locus tags automatically based on the provided prefix.
 ## NOTE: Requires the GFF3 outputs (*.gff3) and the corresponding fasta inputs (*.fsa) in the same folder
 ## NOTE: Requires the BioPerl module Bio::SeqIO
@@ -36,7 +37,7 @@ while (my $file = shift@ARGV){
 		if ($dna =~ /^>/){next;}
 		else{$DNAseq.= $dna;}
 	}
-	my $DNAsequence = lc($DNAseq); 				## Changing to lower case to fit with the translation hash
+	my $DNAsequence = lc($DNAseq); 			## Changing to lower case to fit with the translation hash
 	my $contig_length = length($DNAsequence);	## Calculating the contig size
 	
 	### Init hashes, arrays and values
@@ -44,7 +45,7 @@ while (my $file = shift@ARGV){
 	my $CDS_counter = 0;	## Initialize CDS counter
 	my %gene = ();		## Initialize gene hash
 	my %exon = ();		## Initialize exon hash
-	my %strands = ();		## Initialize strandedness hash
+	my %strands = ();	## Initialize strandedness hash
 	my @todo = ();		## Initialize array of things to do
 	my %aa = ('tca'=>'S','tcc'=>'S','tcg'=>'S','tct'=>'S','tcy'=>'S','tcr'=>'S','tcw'=>'S','tcs'=>'S','tck'=>'S','tcm'=>'S','tcb'=>'S','tcd'=>'S','tch'=>'S','tcv'=>'S','tcn'=>'S',
 	'ttc'=>'F','ttt'=>'F','tty'=>'F','tta'=>'L','ttg'=>'L','ttr'=>'L','tac'=>'Y','tat'=>'Y','tay'=>'Y','taa'=>'*','tag'=>'*','tga'=>'*','tgc'=>'C','tgt'=>'C','tgy'=>'C',
