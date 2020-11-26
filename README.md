@@ -8,8 +8,6 @@ Contains miscellaneous scripts for genomics
 
 - removeTP.pl            - Removes NexteraXT transposon sequences from FASTQ files
 
-- runTaxonomizedBLAST.pl  - Runs NCBI blast locally with taxonomic IDs (requires locally-installed NCBI NR, NT and TaxDB databases)
-
 - SeqIO.pl                - Interconverts common formats. Based on BioPerl's SeqIO module. Requires local installation of BioPerl
 
 - splitMultifasta         - Splits a multifasta file into separate fasta (*.fsa) files
